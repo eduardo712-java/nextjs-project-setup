@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(representative)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clients      Client[] @relation("UserClients")
+  orders       Order[]  @relation("UserOrders")
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  representativeId String
+  name         String
+  fantasyName  String?
+  address      String?
+  city         String?
+  state        String?
+  cep          String?
+  cnpj         String?
+  phone1       String?
+  phone2       String?
+  email        String
+  buyer        String?
+  storePhotoUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  representative User @relation(fields: [representativeId], references: [id], name: "UserClients")
+  orders         Order[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  basePrice   Float
+  sizes       SizePrice[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orderItems  OrderItem[]
+}
+
+model SizePrice {
+  id        String  @id @default(cuid())
+  productId String
+  size      String
+  price     Float
+
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  representativeId String
+  clientId        String
+  orderNumber     String
+  paymentCondition String
+  paymentMethod   String
+  freight         String?
+  transport       String?
+  observation     String?
+  status          OrderStatus @default(RECEIVED)
+  totalValue      Float
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  representative  User        @relation(fields: [representativeId], references: [id], name: "UserOrders")
+  client          Client      @relation(fields: [clientId], references: [id])
+  orderItems      OrderItem[]
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  productId  String
+  size       String
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+
+  order      Order   @relation(fields: [orderId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+}
+
+enum Role {
+  admin
+  representative
+}
+
+enum OrderStatus {
+  RECEIVED
+  IN_EXPEDITION
+  SENT
+  DELIVERED
+}
